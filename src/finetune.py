@@ -31,7 +31,7 @@ from yucca.modules.callbacks.loggers import YuccaLogger
 
 from yucca.pipeline.configuration.split_data import get_split_config
 from yucca.pipeline.configuration.configure_paths import detect_version
-from data.dataset import CLSDataset
+from data.dataset import FOMODataset
 from data.task_configs import task1_config, task2_config, task3_config
 
 
@@ -181,32 +181,26 @@ def main():
         "model_name": args.model_name,
         "model_dimensions": "3D",
         "run_type": run_type,
-        
         # Split configuration
         "split_method": args.split_method,
         "split_param": split_param,
         "split_idx": args.split_idx,
-        
         # Directories
         "save_dir": save_dir,
         "train_data_dir": train_data_dir,
         "version_dir": version_dir,
         "version": version,
-        
         # Checkpoint
         "ckpt_path": ckpt_path,
         "pretrained_weights_path": args.pretrained_weights_path,
-        
         # Reproducibility
         "seed": seed,
-        
         # Dataset properties
         "num_classes": num_classes,
         "num_modalities": modalities,
         "image_extension": ".npy",
         "allow_missing_modalities": False,
         "labels": labels,
-        
         # Training parameters
         "batch_size": args.batch_size,
         "learning_rate": args.learning_rate,
@@ -216,20 +210,16 @@ def main():
         "epochs": args.epochs,
         "train_batches_per_epoch": args.train_batches_per_epoch,
         "effective_batch_size": effective_batch_size,
-        
         # Dataset metrics
         "train_dataset_size": train_dataset_size,
         "val_dataset_size": val_dataset_size,
         "max_iterations": max_iterations,
-        
         # Hardware settings
         "num_devices": args.num_devices,
         "num_workers": args.num_workers,
-        
         # Model compilation
         "compile": args.compile,
         "compile_mode": args.compile_mode,
-        
         # Trainer specific params
         "fast_dev_run": args.fast_dev_run,
     }
@@ -251,7 +241,6 @@ def main():
     )
     loggers = [yucca_logger]
 
-
     # Configure augmentations based on preset
     aug_params = get_finetune_augmentation_params(args.augmentation_preset)
     augmenter = YuccaAugmentationComposer(
@@ -263,7 +252,7 @@ def main():
 
     # Create the data module that handles loading and batching
     data_module = YuccaDataModule(
-        train_dataset_class=CLSDataset,  # Both classification and regression use CLSDataset
+        train_dataset_class=FOMODataset,
         composed_train_transforms=augmenter.train_transforms,
         composed_val_transforms=augmenter.val_transforms,
         patch_size=config["patch_size"],
@@ -275,7 +264,6 @@ def main():
         split_idx=config["split_idx"],
         num_workers=args.num_workers,
     )
-
     # Print dataset information
     print("Train dataset: ", data_module.splits_config.train(config["split_idx"]))
     print("Val dataset: ", data_module.splits_config.val(config["split_idx"]))
