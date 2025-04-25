@@ -263,6 +263,7 @@ def main():
         splits_config=splits_config,
         split_idx=config["split_idx"],
         num_workers=args.num_workers,
+        val_sampler=None,
     )
     # Print dataset information
     print("Train dataset: ", data_module.splits_config.train(config["split_idx"]))
