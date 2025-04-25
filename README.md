@@ -97,11 +97,11 @@ python src/pretrain.py \
     --save_dir=/path/to/save/models \
     --pretrain_data_dir=/path/to/preprocessed/pretrain/data \
     --model_name=unet_b_lw_dec \
-    --patch_size=64 \
-    --batch_size=8 \
+    --patch_size=96 \
+    --batch_size=2 \
     --epochs=100 \
     --warmup_epochs=5 \
-    --num_workers=8 \
+    --num_workers=64 \
     --augmentation_preset=all
 ```
 

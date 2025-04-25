@@ -94,7 +94,7 @@ class PretrainDataModule(pl.LightningDataModule):
             self.train_dataset,
             num_workers=self.num_workers,
             batch_size=self.batch_size,
-            pin_memory=torch.cuda.is_available(),
+            pin_memory=False,
             sampler=sampler,
             shuffle=sampler is None,
         )
@@ -108,7 +108,7 @@ class PretrainDataModule(pl.LightningDataModule):
             self.val_dataset,
             num_workers=self.num_workers,
             batch_size=self.batch_size,
-            pin_memory=torch.cuda.is_available(),
+            pin_memory=False,
             sampler=sampler,
         )
 
