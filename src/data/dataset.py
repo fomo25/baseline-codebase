@@ -13,7 +13,8 @@ from batchgenerators.utilities.file_and_folder_operations import join
 
 class FOMODataset(Dataset):
     """
-    Dataset class for FOMO downstream tasks. Supports classification, regression, and segmentation tasks.
+    Dataset class for FOMO downstream tasks. Supports classification and regression tasks.
+    For segmentation tasks, use YuccaTrainDataset from the Yucca library instead.
     """
 
     def __init__(
@@ -21,25 +22,21 @@ class FOMODataset(Dataset):
         samples: list,
         patch_size: Tuple[int, int, int],
         composed_transforms: Optional[torchvision.transforms.Compose] = None,
-        task_type: Literal[
-            "classification", "regression", "segmentation"
-        ] = "classification",
+        task_type: Literal["classification", "regression"] = "classification",
         allow_missing_modalities: Optional[bool] = False,  # For compatibility
-        p_oversample_foreground: Optional[float] = 0.33,
+        p_oversample_foreground: Optional[float] = None,  # For compatibility
     ):
         super().__init__()
-        # Support all task types
+        # Support only non-segmentation tasks
         assert task_type in [
             "classification",
             "regression",
-            "segmentation",
-        ], f"Unsupported task type: {task_type}"
+        ], f"Unsupported task type: {task_type}. For segmentation use YuccaTrainDataset instead."
 
         self.task_type = task_type
         self.all_files = samples
         self.composed_transforms = composed_transforms
         self.patch_size = patch_size
-        self.p_oversample_foreground = p_oversample_foreground
 
         self.croppad = CropPad(patch_size=self.patch_size)
         self.to_torch = NumpyToTorch()
@@ -61,16 +58,7 @@ class FOMODataset(Dataset):
             "label": label,
         }
 
-        # For segmentation, collect foreground locations for potential oversampling
         metadata = {"foreground_locations": []}
-        if self.task_type == "segmentation" and self.p_oversample_foreground > 0:
-            # Find foreground locations (non-zero in the segmentation mask)
-            if label is not None and np.any(label > 0):
-                foreground_indices = np.where(label > 0)
-                # Store coordinates of foreground voxels
-                foreground_locations = list(zip(*foreground_indices))
-                metadata["foreground_locations"] = foreground_locations
-
         return self._transform(data_dict, metadata)
 
     def _transform(self, data_dict, metadata=None):
@@ -90,27 +78,21 @@ class FOMODataset(Dataset):
 
     def _load_label(self, file):
         # For classification and regression, labels are in .txt files
-        if self.task_type in ["classification", "regression"]:
-            txt_file = file + ".txt"
-            if self.task_type == "classification":
-                return np.loadtxt(txt_file, dtype=int)
-            else:  # regression
-                return np.loadtxt(txt_file, dtype=float)
-        # For segmentation, labels are in .seg.npy files
-        elif self.task_type == "segmentation":
-            seg_file = file + "_seg.npy"
-            try:
-                return np.load(seg_file, "r")
-            except ValueError:
-                return np.load(seg_file, allow_pickle=True)
+        txt_file = file + ".txt"
+        if self.task_type == "classification":
+            return np.loadtxt(txt_file, dtype=int)
+        else:  # regression
+            return np.loadtxt(txt_file, dtype=float)
 
     def _load_volume(self, file):
         file = file + ".npy"
 
         try:
-            return np.load(file, "r")
+            vol = np.load(file, "r")
         except ValueError:
-            return np.load(file, allow_pickle=True)
+            vol = np.load(file, allow_pickle=True)
+
+        return vol
 
 
 class PretrainDataset(Dataset):

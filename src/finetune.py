@@ -28,6 +28,7 @@ from yucca.modules.data.augmentation.YuccaAugmentationComposer import (
 )
 from yucca.modules.data.data_modules.YuccaDataModule import YuccaDataModule
 from yucca.modules.callbacks.loggers import YuccaLogger
+from yucca.modules.data.datasets.YuccaDataset import YuccaTrainDataset
 
 from yucca.pipeline.configuration.split_data import get_split_config
 from yucca.pipeline.configuration.configure_paths import detect_version
@@ -251,19 +252,36 @@ def main():
     )
 
     # Create the data module that handles loading and batching
-    data_module = YuccaDataModule(
-        train_dataset_class=FOMODataset,
-        composed_train_transforms=augmenter.train_transforms,
-        composed_val_transforms=augmenter.val_transforms,
-        patch_size=config["patch_size"],
-        batch_size=config["batch_size"],
-        train_data_dir=config["train_data_dir"],
-        image_extension=config["image_extension"],
-        task_type=config["task_type"],
-        splits_config=splits_config,
-        split_idx=config["split_idx"],
-        num_workers=args.num_workers,
-    )
+    if args.taskid == 2:  # FOMO2 segmentation task
+        data_module = YuccaDataModule(
+            train_dataset_class=YuccaTrainDataset,
+            composed_train_transforms=augmenter.train_transforms,
+            composed_val_transforms=augmenter.val_transforms,
+            patch_size=config["patch_size"],
+            batch_size=config["batch_size"],
+            train_data_dir=config["train_data_dir"],
+            image_extension=config["image_extension"],
+            task_type=config["task_type"],
+            splits_config=splits_config,
+            split_idx=config["split_idx"],
+            num_workers=args.num_workers,
+            p_oversample_foreground=0.33,  # Default foreground oversampling probability
+        )
+    else:  # FOMO1 classification task and FOMO3 regression task
+        data_module = YuccaDataModule(
+            train_dataset_class=FOMODataset,
+            composed_train_transforms=augmenter.train_transforms,
+            composed_val_transforms=augmenter.val_transforms,
+            patch_size=config["patch_size"],
+            batch_size=config["batch_size"],
+            train_data_dir=config["train_data_dir"],
+            image_extension=config["image_extension"],
+            task_type=config["task_type"],
+            splits_config=splits_config,
+            split_idx=config["split_idx"],
+            num_workers=args.num_workers,
+        )
+
     # Print dataset information
     print("Train dataset: ", data_module.splits_config.train(config["split_idx"]))
     print("Val dataset: ", data_module.splits_config.val(config["split_idx"]))
