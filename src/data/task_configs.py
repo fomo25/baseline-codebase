@@ -19,7 +19,7 @@ task2_config = {
     "norm_op": "volume_wise_znorm",
     "num_classes": 2,
     "keep_aspect_ratio": True,
-    "task_type": "classification",
+    "task_type": "segmentation",
     "label_extension": ".txt",
     "labels": {0: "background", 1: "menigioma"},
 }
