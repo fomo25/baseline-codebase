@@ -4,6 +4,7 @@ import nibabel as nib
 from batchgenerators.utilities.file_and_folder_operations import (
     join,
     maybe_mkdir_p as ensure_dir_exists,
+    save_pickle,
 )
 from yucca.functional.preprocessing import preprocess_case_for_training_with_label
 from data.task_configs import task2_config
@@ -75,7 +76,7 @@ def process_subject(task_info):
         label = nib.load(label_path)
 
         # Apply preprocessing with label
-        preprocessed_images, preprocessed_label, _ = (
+        preprocessed_data, preprocessed_label, properties = (
             preprocess_case_for_training_with_label(
                 images=images,
                 label=label,
@@ -88,10 +89,14 @@ def process_subject(task_info):
             )
         )
 
+        data_with_label = preprocessed_data + [preprocessed_label]
+
         # Save preprocessed data
         save_path = join(target_preprocessed, f"{prefix}_{subject}")
-        np.save(save_path + ".npy", preprocessed_images)
-        np.save(save_path + "_seg.npy", preprocessed_label)
+        np.save(save_path + ".npy", np.array(data_with_label, dtype=object))
+
+        # Save properties as pickle
+        save_pickle(properties, save_path + ".pkl")
 
         return f"Processed {subject}"
 

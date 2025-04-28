@@ -28,6 +28,7 @@ from yucca.modules.data.augmentation.YuccaAugmentationComposer import (
 )
 from yucca.modules.data.data_modules.YuccaDataModule import YuccaDataModule
 from yucca.modules.callbacks.loggers import YuccaLogger
+from yucca.modules.data.datasets.YuccaDataset import YuccaTrainDataset
 
 from yucca.pipeline.configuration.split_data import get_split_config
 from yucca.pipeline.configuration.configure_paths import detect_version
@@ -239,7 +240,16 @@ def main():
         version=version,
         steps_per_epoch=args.train_batches_per_epoch,
     )
-    loggers = [yucca_logger]
+
+    # Create wandb logger for Lightning
+    wandb_logger = L.pytorch.loggers.WandbLogger(
+        project="fomo-finetuning",
+        name=f"{config['experiment']}_version_{config['version']}",
+        log_model=True,
+    )
+
+    # Set up loggers
+    loggers = [yucca_logger, wandb_logger]
 
     # Configure augmentations based on preset
     aug_params = get_finetune_augmentation_params(args.augmentation_preset)
@@ -251,20 +261,36 @@ def main():
     )
 
     # Create the data module that handles loading and batching
-    data_module = YuccaDataModule(
-        train_dataset_class=FOMODataset,
-        composed_train_transforms=augmenter.train_transforms,
-        composed_val_transforms=augmenter.val_transforms,
-        patch_size=config["patch_size"],
-        batch_size=config["batch_size"],
-        train_data_dir=config["train_data_dir"],
-        image_extension=config["image_extension"],
-        task_type=config["task_type"],
-        splits_config=splits_config,
-        split_idx=config["split_idx"],
-        num_workers=args.num_workers,
-        val_sampler=None,
-    )
+    if args.taskid == 2:  # FOMO2 segmentation task
+        data_module = YuccaDataModule(
+            train_dataset_class=YuccaTrainDataset,
+            composed_train_transforms=augmenter.train_transforms,
+            composed_val_transforms=augmenter.val_transforms,
+            patch_size=config["patch_size"],
+            batch_size=config["batch_size"],
+            train_data_dir=config["train_data_dir"],
+            image_extension=config["image_extension"],
+            task_type=config["task_type"],
+            splits_config=splits_config,
+            split_idx=config["split_idx"],
+            num_workers=args.num_workers,
+            p_oversample_foreground=0.33,  # Default foreground oversampling probability
+        )
+    else:  # FOMO1 classification task and FOMO3 regression task
+        data_module = YuccaDataModule(
+            train_dataset_class=FOMODataset,
+            composed_train_transforms=augmenter.train_transforms,
+            composed_val_transforms=augmenter.val_transforms,
+            patch_size=config["patch_size"],
+            batch_size=config["batch_size"],
+            train_data_dir=config["train_data_dir"],
+            image_extension=config["image_extension"],
+            task_type=config["task_type"],
+            splits_config=splits_config,
+            split_idx=config["split_idx"],
+            num_workers=args.num_workers,
+        )
+
     # Print dataset information
     print("Train dataset: ", data_module.splits_config.train(config["split_idx"]))
     print("Val dataset: ", data_module.splits_config.val(config["split_idx"]))
@@ -274,20 +300,6 @@ def main():
         f"with train dataset of size {train_dataset_size} datapoints and val dataset of size {val_dataset_size} "
         f"and effective batch size of {effective_batch_size}"
     )
-
-    # Initialize wandb logging
-    wandb.init(
-        project="fomo-finetuning",
-        name=f"{config['experiment']}_version_{config['version']}",
-    )
-
-    # Create wandb logger for Lightning
-    wandb_logger = L.pytorch.loggers.WandbLogger(
-        project="fomo-finetuning",
-        name=f"{config['experiment']}_version_{config['version']}",
-        log_model=True,
-    )
-    loggers.append(wandb_logger)
 
     # Create model and trainer
     model = BaseSupervisedModel.create(
