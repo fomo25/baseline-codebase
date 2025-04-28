@@ -172,6 +172,9 @@ class BaseSupervisedModel(L.LightningModule):
             {"train/loss": loss} | metrics,
             prog_bar=self.progress_bar,
             logger=True,
+            sync_dist=True,
+            on_step=True,
+            on_epoch=True,
         )
 
         return loss
@@ -187,6 +190,9 @@ class BaseSupervisedModel(L.LightningModule):
             {"val/loss": loss} | metrics,
             prog_bar=self.progress_bar,
             logger=True,
+            sync_dist=True,
+            on_step=False,
+            on_epoch=True,
         )
 
     def on_predict_start(self):

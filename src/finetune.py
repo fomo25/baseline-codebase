@@ -240,7 +240,16 @@ def main():
         version=version,
         steps_per_epoch=args.train_batches_per_epoch,
     )
-    loggers = [yucca_logger]
+
+    # Create wandb logger for Lightning
+    wandb_logger = L.pytorch.loggers.WandbLogger(
+        project="fomo-finetuning",
+        name=f"{config['experiment']}_version_{config['version']}",
+        log_model=True,
+    )
+
+    # Set up loggers
+    loggers = [yucca_logger, wandb_logger]
 
     # Configure augmentations based on preset
     aug_params = get_finetune_augmentation_params(args.augmentation_preset)
@@ -291,20 +300,6 @@ def main():
         f"with train dataset of size {train_dataset_size} datapoints and val dataset of size {val_dataset_size} "
         f"and effective batch size of {effective_batch_size}"
     )
-
-    # Initialize wandb logging
-    wandb.init(
-        project="fomo-finetuning",
-        name=f"{config['experiment']}_version_{config['version']}",
-    )
-
-    # Create wandb logger for Lightning
-    wandb_logger = L.pytorch.loggers.WandbLogger(
-        project="fomo-finetuning",
-        name=f"{config['experiment']}_version_{config['version']}",
-        log_model=True,
-    )
-    loggers.append(wandb_logger)
 
     # Create model and trainer
     model = BaseSupervisedModel.create(
