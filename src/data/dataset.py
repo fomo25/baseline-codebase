@@ -82,7 +82,9 @@ class FOMODataset(Dataset):
         if self.task_type == "classification":
             return np.loadtxt(txt_file, dtype=int)
         else:  # regression
-            return np.loadtxt(txt_file, dtype=float)
+            reg_label = np.loadtxt(txt_file, dtype=float)
+            reg_label = np.atleast_1d(reg_label)
+            return reg_label
 
     def _load_volume(self, file):
         file = file + ".npy"
