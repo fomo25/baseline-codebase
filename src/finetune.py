@@ -253,9 +253,11 @@ def main():
 
     # Configure augmentations based on preset
     aug_params = get_finetune_augmentation_params(args.augmentation_preset)
+    # we use the cls augmentatoin preset for regression
+    tt_preset = "classification" if task_type == "regression" else task_type
     augmenter = YuccaAugmentationComposer(
         patch_size=config["patch_size"],
-        task_type_preset=task_type,
+        task_type_preset=tt_preset,
         parameter_dict=aug_params,
         deep_supervision=False,
     )
